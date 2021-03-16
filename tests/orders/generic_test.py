@@ -1,3 +1,4 @@
+import httpx
 import unittest
 
 from tda.orders.generic import *
@@ -26,7 +27,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_session_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.Session.NORMAL'):
             self.order_builder.set_session('NORMAL')
 
     @no_duplicates
@@ -52,7 +54,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_duration_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.Duration.DAY'):
             self.order_builder.set_duration('DAY')
 
     @no_duplicates
@@ -78,7 +81,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_order_type_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.OrderType.MARKET'):
             self.order_builder.set_order_type('MARKET')
 
     @no_duplicates
@@ -105,7 +109,9 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test__wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 
+                'tda.orders.common.ComplexOrderStrategyType.IRON_CONDOR'):
             self.order_builder.set_complex_order_strategy_type('IRON_CONDOR')
 
     @no_duplicates
@@ -154,7 +160,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_requested_destination_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.Destination.INET'):
             self.order_builder.set_requested_destination('INET')
 
     @no_duplicates
@@ -228,7 +235,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_stop_price_link_basis_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.StopPriceLinkBasis.ASK'):
             self.order_builder.set_stop_price_link_basis('ASK')
 
     @no_duplicates
@@ -254,7 +262,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_stop_price_link_type_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.StopPriceLinkType.VALUE'):
             self.order_builder.set_stop_price_link_type('VALUE')
 
     @no_duplicates
@@ -293,7 +302,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_stop_type_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.StopType.MARK'):
             self.order_builder.set_stop_type('MARK')
 
     @no_duplicates
@@ -319,7 +329,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_price_link_basis_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.PriceLinkBasis.AVERAGE'):
             self.order_builder.set_price_link_basis('AVERAGE')
 
     @no_duplicates
@@ -345,7 +356,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_price_link_type_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.PriceLinkType.PERCENT'):
             self.order_builder.set_price_link_type('PERCENT')
 
     @no_duplicates
@@ -443,7 +455,9 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_special_instruction_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError,
+                'tda.orders.common.SpecialInstruction.DO_NOT_REDUCE'):
             self.order_builder.set_special_instruction('DO_NOT_REDUCE')
 
     @no_duplicates
@@ -469,7 +483,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_order_strategy_type_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.OrderStrategyType.OCO'):
             self.order_builder.set_order_strategy_type('OCO')
 
     @no_duplicates
@@ -507,6 +522,12 @@ class OrderBuilderTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.order_builder.add_child_order_strategy(10)
 
+    @no_duplicates
+    def test_add_child_order_strategy_httpx_response(self):
+        with self.assertRaisesRegex(
+                ValueError, 'Child order cannot be a response'):
+            self.order_builder.add_child_order_strategy(httpx.Response(200))
+
     ##########################################################################
     # OrderLegCollection
 
@@ -538,7 +559,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_add_equity_leg_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.EquityInstruction.BUY'):
             self.order_builder.add_equity_leg('BUY', 'GOOG', 10)
 
     @no_duplicates
@@ -607,7 +629,8 @@ class OrderBuilderTest(unittest.TestCase):
 
     @no_duplicates
     def test_add_option_leg_wrong_type(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+                ValueError, 'tda.orders.common.OptionInstruction.BUY_TO_OPEN'):
             self.order_builder.add_option_leg(
                 'BUY_TO_OPEN', 'GOOG31433C1342', 10)
 

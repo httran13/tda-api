@@ -3,7 +3,23 @@ import unittest
 from tda.orders.common import *
 from tda.orders.equities import *
 from .utils import has_diff, no_duplicates
-from . import test_utils
+
+
+class EquityOrderBuilderLegacy(unittest.TestCase):
+
+    def test_import_EquityOrderBuilder(self):
+        with self.assertRaisesRegex(
+                ImportError, 'EquityOrderBuilder has been deleted'):
+            from tda.orders import EquityOrderBuilder
+
+    def test_other_import(self):
+        with self.assertRaisesRegex(ImportError, 'bogus'):
+            from tda.orders import bogus
+
+    def test_attribute_access(self):
+        with self.assertRaisesRegex(AttributeError, 'bogus'):
+            import tda
+            print(tda.orders.bogus)
 
 
 class BuilderTemplates(unittest.TestCase):
