@@ -150,3 +150,4 @@ docs-build/
 
 # jetbrains ide
 .idea/
+/examples/streaming/ameritrade-credentials.pickle
