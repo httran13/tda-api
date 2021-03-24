@@ -147,3 +147,6 @@ tags
 virtualenv
 
 docs-build/
+
+# jetbrains ide
+.idea/
