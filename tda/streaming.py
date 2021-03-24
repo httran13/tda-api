@@ -9,7 +9,6 @@ import inspect
 import json
 import logging
 import tda
-import time
 import urllib.parse
 import websockets
 from websockets import ConnectionClosed
