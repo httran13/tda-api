@@ -1,35 +1,14 @@
 import json
 import os
-import time
-
 from tda.auth import easy_client, client_from_access_functions
 from tda.client import Client
 from tda.streaming import StreamClient
 import asyncio
 import pprint
-import tda
 import random
 
 API_KEY = "XXXXXX"
 ACCOUNT_ID = "XXXXXX"
-# If token defined here, use this env, else find token in path. This token will get updated to path.
-# MYTOKEN={
-#     "access_token": "",
-#     "scope": "Hello World!",
-#     "expires_in": 1800,
-#     "token_type": "Bearer",
-#     "expires_at": 1616222008,
-#     "refresh_token": ""
-# }
-
-## Uncomment to enable websocket debug
-import logging
-logger = logging.getLogger('websockets.protocol')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler())
-
-tdlogger = tda.streaming.get_logger()
-tdlogger.setLevel(logging.DEBUG)
 
 
 class MyStreamConsumer:
@@ -64,15 +43,9 @@ class MyStreamConsumer:
                     token = json.load(tokenfile)
                     return token
 
-            def load_token():
-                return MYTOKEN
-
             if os.path.isfile(self.credentials_path):
                 print("returning token file from {}".format(self.credentials_path))
                 return load_refresh_token
-            else:
-                print("returning static token")
-                return load_token
 
         def update_token(path):
             def update_tok(t, refresh_token):
@@ -100,16 +73,12 @@ class MyStreamConsumer:
 
         # Kick off our handle_queue function as an independent coroutine
         asyncio.ensure_future(self.handle_queue())
-        # await asyncio.sleep(30)
-        print('Starting handle msg loop in stream')
-        # Continuously handle inbound messages
 
+        # Continuously handle inbound messages
         ## Kick off coroutine to add symbols
         asyncio.ensure_future(self.add_me_later())
-
         while True:
             await self.stream_client.handle_message()
-
 
     async def add_me_later(self):
         symbol = [
@@ -123,7 +92,6 @@ class MyStreamConsumer:
             addme = symbol[random.randint(0, len(symbol) - 1)]
 
             await self.stream_client.news_headline_subs([addme])
-
 
     async def handle_timesale_equity(self, msg):
         """
