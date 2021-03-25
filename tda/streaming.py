@@ -147,7 +147,7 @@ class StreamClient(EnumEnforcer):
                 self.logger.error('Type error while sending request: {}'.format(type_error_req))
             except ConnectionClosed as e:
                 self.logger.error(
-                    'Websocket connection close : {}'.format(e['reason'])
+                    'Websocket connection close : {}'.format(e)
                 )
                 # TODO retry to re-establish connection?
                 # End streaming client
@@ -194,7 +194,6 @@ class StreamClient(EnumEnforcer):
             except ConnectionClosed as e:
                 # Connection closed is an exit case for consumer corot
                 self.logger.error('Connection closed error : {}'.format(e))
-                self._exit_producer = True
                 raise e
 
     def req_num(self):
