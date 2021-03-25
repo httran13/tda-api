@@ -1,6 +1,6 @@
 import json
 import os
-from tda.auth import easy_client, client_from_access_functions
+from tda.auth import easy_client
 from tda.client import Client
 from tda.streaming import StreamClient
 import asyncio
@@ -37,28 +37,10 @@ class MyStreamConsumer:
         Create the clients and log in. Using easy_client, we can get new creds
         from the user via the web browser if necessary
         """
-        def token_read(path):
-            def load_refresh_token():
-                with open(path, 'r') as tokenfile:
-                    token = json.load(tokenfile)
-                    return token
-
-            if os.path.isfile(self.credentials_path):
-                print("returning token file from {}".format(self.credentials_path))
-                return load_refresh_token
-
-        def update_token(path):
-            def update_tok(t, refresh_token):
-                with open(path, 'w') as f:
-                    json.dump(t, f)
-            return update_tok
-
-
-        self.tda_client = client_from_access_functions(api_key=API_KEY,
-                                                       token_read_func=token_read(self.credentials_path),
-                                                       token_write_func=update_token(self.credentials_path),
-                                                       asyncio=False )
-
+        self.tda_client = easy_client(
+            api_key=self.api_key,
+            redirect_uri='https://localhost:8080',
+            token_path=self.credentials_path)
         self.stream_client = StreamClient(
             self.tda_client, account_id=self.account_id)
 
