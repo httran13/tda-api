@@ -170,7 +170,7 @@ class StreamClient(EnumEnforcer):
                         self.logger.debug('Receive msg queue count : {}'.format(self._received_msg_queue.qsize()))
                         await asyncio.sleep(2)
                         continue
-                    for task in self._pending_tasks:
+                    for task in self._running_tasks:
                         self.logger.debug('Canceling task {}'.format(task))
                         task.cancel()
                     break
@@ -194,6 +194,7 @@ class StreamClient(EnumEnforcer):
             except ConnectionClosed as e:
                 # Connection closed is an exit case for consumer corot
                 self.logger.error('Connection closed error : {}'.format(e))
+                self._exit_producer = True
                 raise e
 
     def req_num(self):
