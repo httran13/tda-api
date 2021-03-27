@@ -73,14 +73,9 @@ class _Handler:
     def label_message(self, msg):
         if 'content' in msg:
             new_msg = copy.deepcopy(msg)
-
-            # case response when content is a dict
-            if isinstance(msg['content'], dict):
-                self._field_enum_type.relabel_message(msg['content'], new_msg['content'])
-            elif isinstance(msg['content'], list):
-                for idx in range(len(msg['content'])):
-                    self._field_enum_type.relabel_message(msg['content'][idx],
-                                                          new_msg['content'][idx])
+            for idx in range(len(msg['content'])):
+                self._field_enum_type.relabel_message(msg['content'][idx],
+                                                      new_msg['content'][idx])
             return new_msg
         else:
             return msg
@@ -366,8 +361,7 @@ class StreamClient(EnumEnforcer):
                 if r['service'] in self._handlers:
                     for handler in self._handlers[r['service']]:
                         # TODO Response Error handling: Service level response error handling here? or return to user?
-                        labeled_r = handler.label_message(r)
-                        h = handler(labeled_r)
+                        h = handler(r)
 
                         # Check if h is an awaitable, if so schedule it
                         # This allows for both sync and async handlers
