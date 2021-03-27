@@ -62,7 +62,6 @@ class UnparsableMessage(Exception):
         self.raw_msg = raw_msg
         self.json_parse_exception = json_parse_exception
 
-
 class _Handler:
     def __init__(self, func, field_enum_type):
         self._func = func
@@ -115,12 +114,7 @@ class StreamClient(EnumEnforcer):
         # deliver these messages. This list records the messages that were read
         # from the stream but not handled yet. Messages should be read from this
         # list before they are read from the stream.
-        self._overflow_items = deque()
-
-        # queue for producers making requests to the streaming services
-        # We want another process to handle requests and a trigger that tells us we no longer want to produce requests
-        self._requests_producer_queue = asyncio.Queue(maxsize=128)
-        self._received_msg_queue = asyncio.Queue(maxsize=128)
+        self._overflow_items = deque() # TODO deprecated
 
         # Dict to validate responses. This doesn't guarantee the response will get validated, perhaps
         # a better way is to use a ttl dict and if a key still exists after some time, raise a timeout exception
@@ -131,70 +125,6 @@ class StreamClient(EnumEnforcer):
         self.request_number = 0
         self._exit_producer = False
         self._running_tasks = None
-
-    # Raises ConnectionClosed exception if send() raises a
-    async def producer_handler(self):
-        self.logger.debug('Starting producer handler')
-        while True:
-
-            req = await self._requests_producer_queue.get()
-            try:
-                self.logger.debug('sending msg {}'.format(req))
-                await self._send(req)
-            except TypeError:
-
-                type_error_req = self._expected_response.pop(int(req['requestid']))
-                self.logger.error('Type error while sending request: {}'.format(type_error_req))
-            except ConnectionClosed as e:
-                self.logger.error(
-                    'Websocket connection close : {}'.format(e)
-                )
-                # TODO retry to re-establish connection?
-                # End streaming client
-                # Flush requests queue to report requests that didn't succeed due to conn error
-                while self._requests_producer_queue.qsize() > 0:
-                    self.logger.error('Request Not delivered due to websocket connection: {}'.format(
-                        self._requests_producer_queue.get()
-                    ))
-                raise e
-
-            # Cleanup
-            if self._exit_producer:
-                # check if there's still more requests in the queue
-                if self._requests_producer_queue.qsize() > 0:
-                    continue
-                else:
-                    # Ensure consumer queue is not empty
-                    while self._received_msg_queue.qsize() > 0:
-                        self.logger.debug('Purging receive msg queue')
-                        self.logger.debug('Receive msg queue count : {}'.format(self._received_msg_queue.qsize()))
-                        await asyncio.sleep(2)
-                        continue
-                    for task in self._running_tasks:
-                        self.logger.debug('Canceling task {}'.format(task))
-                        task.cancel()
-                    break
-
-    # Singleton task to handle receive messages
-    async def consumer_handler(self):
-        ## get message from wss and enqueue to consumer queue
-        ## asyncio.wait will trigger the exit for this co-routine
-        self.logger.debug('Starting consumer handler')
-        while True:
-            try:
-                msg = await self._receive()
-                ## Handle responses here
-                #TODO handle full queue
-                await self._received_msg_queue.put(msg)
-            except ValueError as e:
-                ## exponential backoff needed?
-                self.logger.debug('Socket not open, sleeping for 3 secs {}'.format(e))
-                await asyncio.sleep(2)
-                continue
-            except ConnectionClosed as e:
-                # Connection closed is an exit case for consumer corot
-                self.logger.error('Connection closed error : {}'.format(e))
-                raise e
 
     def req_num(self):
         self.request_number += 1
@@ -283,10 +213,6 @@ class StreamClient(EnumEnforcer):
 
         # Initialize miscellaneous parameters
         self._source = principals['streamerInfo']['appId']
-
-        consumer_task = asyncio.ensure_future(self.consumer_handler())
-        producer_task = asyncio.ensure_future(self.producer_handler())
-        self._running_tasks = [consumer_task, producer_task]
 
     def _make_request(self, *, service, command, parameters):
         request_id = self._request_id
@@ -383,6 +309,7 @@ class StreamClient(EnumEnforcer):
                         resp_command))
 
             # Validate response code
+            # TODO should we handle here or return to user? https://docs.google.com/document/d/1FDrPpmOOJKkHPYX7yD7qHH4xQVl6XfZMO6KqclZBzDY/edit
             resp_code = resp['content']['code']
             if resp_code != 0:
                 raise UnexpectedResponseCode(
@@ -405,21 +332,28 @@ class StreamClient(EnumEnforcer):
                 'keys': ','.join(symbols),
                 'fields': ','.join(str(f) for f in fields)})
 
-        # await self._send({'requests': [request]})
         ## Note we can use a ttl dict here as a timeout for response. Raise an exception after some time if key still exists. ( meaning it hasn't been handled)
         self._expected_response[request_id] = self._response_validator(request_id, service, command)
-        await self._requests_producer_queue.put({'requests': [request]})
+        req = {'requests': [request]}
+        try:
+            await self._send(req)
+        except TypeError as e:
+            type_error_req = self._expected_response.pop(int(req['requestid']))
+            self.logger.error('Type error while sending request: {}'.format(type_error_req))
+            raise e
         # setup response handler for handle_message
 
     async def handle_message(self):
-        # msg = await self._receive()
-        msg = await self._received_msg_queue.get()
+        msg = await self._receive()
+        # msg = await self._received_msg_queue.get()
         self.logger.debug('State of expected response dict {}'.format(self._expected_response))
 
         # response
         if 'response' in msg: ## If a response, handle responses by checking a dict for the response
             # raise UnexpectedResponse(msg)
             for r in msg['response']:
+
+                # TODO Response Error handling: Top level response error handling
                 requestid = r['requestid']
                 response_validator = self._expected_response.pop(int(requestid), None)
 
@@ -431,6 +365,7 @@ class StreamClient(EnumEnforcer):
                 #Pass response downstream
                 if r['service'] in self._handlers:
                     for handler in self._handlers[r['service']]:
+                        # TODO Response Error handling: Service level response error handling here? or return to user?
                         labeled_r = handler.label_message(r)
                         h = handler(labeled_r)
 
@@ -529,11 +464,14 @@ class StreamClient(EnumEnforcer):
             service='ADMIN', command='LOGIN',
             parameters=request_parameters)
 
-        # await self._send({'requests': [request]})
         self._expected_response[request_id] = self._response_validator(request_id, 'ADMIN', 'LOGIN')
-        await self._requests_producer_queue.put({'requests': [request]})
-        ## defer all
-        # await self._await_response(request_id, 'ADMIN', 'LOGIN')
+        req = {'requests': [request]}
+        try:
+            await self._send(req)
+        except TypeError as e:
+            type_error_req = self._expected_response.pop(int(req['requestid']))
+            self.logger.error('Type error while sending request: {}'.format(type_error_req))
+            raise e
 
 
     ##########################################################################
@@ -581,8 +519,14 @@ class StreamClient(EnumEnforcer):
         # await self._send({'requests': [request]})
         # await self._await_response(request_id, 'ADMIN', 'QOS')
         self._expected_response[request_id] = self._response_validator(request_id, 'ADMIN', 'QOS')
-        await self._requests_producer_queue.put({'requests': [request]})
-        self.logger.debug('Sent QOS request {}'.format(request))
+        req = {'requests': [request]}
+        # await self._requests_producer_queue.put({'requests': [request]})
+        try:
+            await self._send(req)
+        except TypeError as e:
+            type_error_req = self._expected_response.pop(int(req['requestid']))
+            self.logger.error('Type error while sending request: {}'.format(type_error_req))
+            raise e
 
     ##########################################################################
     # ACCT_ACTIVITY
