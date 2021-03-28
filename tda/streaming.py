@@ -1130,6 +1130,24 @@ class StreamClient(EnumEnforcer):
         await self._service_op(
             symbols, 'LEVELONE_FUTURES', 'SUBS', self.LevelOneFuturesFields,
             fields=fields)
+    async def level_one_futures_unsubs(self, symbols, *, fields=None):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640604>`__
+
+        Subscribe to level one futures quote data.
+
+        :param symbols: Futures symbols to receive quotes for
+        :param fields: Iterable of :class:`LevelOneFuturesFields` representing
+                       the fields to return in streaming entries. If unset, all
+                       fields will be requested.
+        '''
+        if fields and self.LevelOneFuturesFields.SYMBOL not in fields:
+            fields.append(self.LevelOneFuturesFields.SYMBOL)
+        await self._service_op(
+            symbols, 'LEVELONE_FUTURES', 'UNSUBS', self.LevelOneFuturesFields,
+            fields=fields)
+
 
     def add_level_one_futures_handler(self, handler):
         '''
@@ -1261,6 +1279,23 @@ class StreamClient(EnumEnforcer):
             fields.append(self.LevelOneForexFields.SYMBOL)
         await self._service_op(
             symbols, 'LEVELONE_FOREX', 'SUBS', self.LevelOneForexFields,
+            fields=fields)
+    async def level_one_forex_unsubs(self, symbols, *, fields=None):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640606>`__
+
+        Subscribe to level one forex quote data.
+
+        :param symbols: Forex symbols to receive quotes for
+        :param fields: Iterable of :class:`LevelOneForexFields` representing
+                       the fields to return in streaming entries. If unset, all
+                       fields will be requested.
+        '''
+        if fields and self.LevelOneForexFields.SYMBOL not in fields:
+            fields.append(self.LevelOneForexFields.SYMBOL)
+        await self._service_op(
+            symbols, 'LEVELONE_FOREX', 'UNSUBS', self.LevelOneForexFields,
             fields=fields)
 
     def add_level_one_forex_handler(self, handler):
@@ -1678,6 +1713,17 @@ class StreamClient(EnumEnforcer):
         Subscribe to news headlines related to the given symbols.
         '''
         await self._service_op(symbols, 'NEWS_HEADLINE', 'SUBS',
+                               self.NewsHeadlineFields,
+                               fields=self.NewsHeadlineFields.all_fields())
+
+    async def news_headline_unsubs(self, symbols):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640626>`__
+
+        Subscribe to news headlines related to the given symbols.
+        '''
+        await self._service_op(symbols, 'NEWS_HEADLINE', 'UNSUBS',
                                self.NewsHeadlineFields,
                                fields=self.NewsHeadlineFields.all_fields())
 
