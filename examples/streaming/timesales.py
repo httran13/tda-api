@@ -68,7 +68,7 @@ class MyStreamConsumer:
 
     async def add_me_later_prompt(self):
         while True:
-            val = input("Execute Next cmd")
+            val = input("Next symbol to sub cmd: ")
             print("adding symbol {} from prompt : {}".format(val, val))
             await self.stream_client.news_headline_subs([val])
 
