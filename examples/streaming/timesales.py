@@ -58,8 +58,20 @@ class MyStreamConsumer:
         asyncio.ensure_future(self.handle_queue())
 
         # Continuously handle inbound messages
+
+        ## Kick off coroutine to add symbols
+        asyncio.ensure_future(self.add_me_later_prompt())
+
         while True:
             await self.stream_client.handle_message()
+
+
+    async def add_me_later_prompt(self):
+        while True:
+            val = input("Execute Next cmd")
+            print("adding symbol {} from prompt : {}".format(val, val))
+            await self.stream_client.news_headline_subs([val])
+
 
     async def handle_timesale_equity(self, msg):
         """
